@@ -24,7 +24,7 @@ namespace MigrarDatosSQL
         public string Nombre;
 
         public int Edad;
-        //AJSAJAJSJASJASJ
+        //AJSAJAJSJASJASJ v2
 
         public Ciudadano(int id, string nombre, int edad)
         {
