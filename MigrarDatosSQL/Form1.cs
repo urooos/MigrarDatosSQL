@@ -24,6 +24,7 @@ namespace MigrarDatosSQL
         public string Nombre;
 
         public int Edad;
+        //AJSAJAJSJASJASJ
 
         public Ciudadano(int id, string nombre, int edad)
         {
@@ -96,6 +97,33 @@ namespace MigrarDatosSQL
         public long ObtenerOffset(int posicion) => (long)posicion * Ciudadano.Size;
 
         public bool ArchivoExiste() => File.Exists(_path);
+
+        public bool EditarCiudadano(Ciudadano c, long offset)
+        {
+            if (!File.Exists(_path)) return false;
+
+            using var fs     = new FileStream(_path, FileMode.Open, FileAccess.Write);
+            using var writer = new BinaryWriter(fs, Encoding.Latin1, leaveOpen: true);
+
+            fs.Seek(offset, SeekOrigin.Begin);
+            writer.Write(c.Id);
+            writer.Write(c.Nombre.PadRight(50).Substring(0, 50).ToCharArray());
+            writer.Write(c.Edad);
+            return true;
+        }
+
+        public bool EliminarCiudadano(long offset)
+        {
+            if (!File.Exists(_path)) return false;
+
+            // Sobrescribe el slot con ceros (registro vacío)
+            using var fs     = new FileStream(_path, FileMode.Open, FileAccess.Write);
+            using var writer = new BinaryWriter(fs, Encoding.Latin1, leaveOpen: true);
+
+            fs.Seek(offset, SeekOrigin.Begin);
+            writer.Write(new byte[Ciudadano.Size]); // 58 bytes en cero
+            return true;
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -187,6 +215,18 @@ IF NOT EXISTS (SELECT 1 FROM Ciudadanos WHERE Id = @Id)
             {
                 MessageBox.Show("Ingrese una posición válida (entero ≥ 0).",
                     "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            long offsetDeseado = _gestor.ObtenerOffset(posicion);
+            if (_indice.ContainsValue(offsetDeseado))
+            {
+                int idOcupante = -1;
+                foreach (var kv in _indice)
+                    if (kv.Value == offsetDeseado) { idOcupante = kv.Key; break; }
+
+                MessageBox.Show($"La posición {posicion} ya está ocupada por el ciudadano con ID {idOcupante}.",
+                    "Posición ocupada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -318,7 +358,7 @@ IF NOT EXISTS (SELECT 1 FROM Ciudadanos WHERE Id = @Id)
             else
             {
                 _connectionString =
-                    $"Server={servidor}\\SQLEXPRESS;" +
+                    $"Server={servidor},1433;" +
                     $"Database={txtDatabase.Text.Trim()};" +
                     $"User Id={txtUsuario.Text.Trim()};" +
                     $"Password={txtPassword.Text.Trim()};" +
@@ -483,5 +523,90 @@ CREATE TABLE Ciudadanos (
         private void btnLimpiarLog_Click(object sender, EventArgs e)    => txtLog.Clear();
         private void btnLimpiarCampos_Click(object sender, EventArgs e) =>
             (txtID.Text, txtNombre.Text, txtEdad.Text, txtPosicion.Text) = ("", "", "", "");
+
+        // ═════════════════════════════════════════════════════════════════════
+        //  ADMINISTRAR – Editar y Eliminar registros del archivo binario
+        // ═════════════════════════════════════════════════════════════════════
+
+        private void btnBuscarAdmin_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtAdminID.Text.Trim(), out int idBuscar) || idBuscar <= 0)
+            {
+                MessageBox.Show("Ingrese un ID válido.", "Validación",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!_indice.TryGetValue(idBuscar, out long offset))
+            {
+                MessageBox.Show($"No existe ningún ciudadano con ID {idBuscar}.",
+                    "No encontrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            int posicion = (int)(offset / Ciudadano.Size);
+            Ciudadano? c = _gestor.LeerCiudadano(posicion);
+            if (c == null) return;
+
+            txtAdminNombre.Text  = c.Value.Nombre;
+            txtAdminEdad.Text    = c.Value.Edad.ToString();
+            btnEditarAdmin.Enabled  = true;
+            btnEliminarAdmin.Enabled = true;
+            AppendLog($"[ADMIN] Ciudadano encontrado → ID={c.Value.Id}, Nombre={c.Value.Nombre}, Edad={c.Value.Edad}");
+        }
+
+        private void btnEditarAdmin_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtAdminID.Text.Trim(), out int id) || id <= 0) return;
+
+            string nombre = txtAdminNombre.Text.Trim();
+            if (nombre.Length == 0 || nombre.Length > 50)
+            {
+                MessageBox.Show("El nombre no puede estar vacío y debe tener máximo 50 caracteres.",
+                    "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!int.TryParse(txtAdminEdad.Text.Trim(), out int edad) || edad < 0 || edad > 150)
+            {
+                MessageBox.Show("La edad debe ser un número entre 0 y 150.",
+                    "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!_indice.TryGetValue(id, out long offset)) return;
+
+            var ciudadano = new Ciudadano(id, nombre, edad);
+            _gestor.EditarCiudadano(ciudadano, offset);
+
+            AppendLog($"[ADMIN] Ciudadano ID={id} actualizado → Nombre={nombre}, Edad={edad}");
+            MessageBox.Show($"Ciudadano ID={id} actualizado correctamente.",
+                "Editado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnEliminarAdmin_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtAdminID.Text.Trim(), out int id) || id <= 0) return;
+
+            var confirmacion = MessageBox.Show(
+                $"¿Está seguro de que desea eliminar al ciudadano con ID {id}?\nEsta acción no se puede deshacer.",
+                "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (confirmacion != DialogResult.Yes) return;
+
+            if (!_indice.TryGetValue(id, out long offset)) return;
+
+            _gestor.EliminarCiudadano(offset);
+            _indice.Remove(id);
+            GuardarIndice();
+
+            txtAdminNombre.Text  = "";
+            txtAdminEdad.Text    = "";
+            btnEditarAdmin.Enabled   = false;
+            btnEliminarAdmin.Enabled = false;
+
+            AppendLog($"[ADMIN] Ciudadano ID={id} eliminado del archivo y del índice.");
+            MessageBox.Show($"Ciudadano ID={id} eliminado correctamente.",
+                "Eliminado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 }

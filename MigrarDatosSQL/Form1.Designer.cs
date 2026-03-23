@@ -19,6 +19,7 @@ namespace MigrarDatosSQL
             this.tabNivel1             = new System.Windows.Forms.TabPage();
             this.tabNivel2             = new System.Windows.Forms.TabPage();
             this.tabNivel3             = new System.Windows.Forms.TabPage();
+            this.tabAdmin              = new System.Windows.Forms.TabPage();
             // tabLog eliminado – el log ahora vive fuera del TabControl
 
             // Nivel 1 controles
@@ -60,6 +61,18 @@ namespace MigrarDatosSQL
             this.btnConsultarSQL       = new System.Windows.Forms.Button();
             this.lblInfoSQL            = new System.Windows.Forms.Label();
 
+            // Administrar controles
+            this.grpAdmin              = new System.Windows.Forms.GroupBox();
+            this.lblAdminID            = new System.Windows.Forms.Label();
+            this.txtAdminID            = new System.Windows.Forms.TextBox();
+            this.lblAdminNombre        = new System.Windows.Forms.Label();
+            this.txtAdminNombre        = new System.Windows.Forms.TextBox();
+            this.lblAdminEdad          = new System.Windows.Forms.Label();
+            this.txtAdminEdad          = new System.Windows.Forms.TextBox();
+            this.btnBuscarAdmin        = new System.Windows.Forms.Button();
+            this.btnEditarAdmin        = new System.Windows.Forms.Button();
+            this.btnEliminarAdmin      = new System.Windows.Forms.Button();
+
             // Log controles – ahora van directo al Form, fuera del tabControl
             this.pnlLog                = new System.Windows.Forms.Panel();
             this.lblLogTitulo          = new System.Windows.Forms.Label();
@@ -70,6 +83,7 @@ namespace MigrarDatosSQL
             this.tabNivel1.SuspendLayout();
             this.tabNivel2.SuspendLayout();
             this.tabNivel3.SuspendLayout();
+            this.tabAdmin.SuspendLayout();
             this.SuspendLayout();
 
             // ═══════════════════════════════════════════════════════════════
@@ -78,6 +92,7 @@ namespace MigrarDatosSQL
             this.tabControl1.Controls.Add(this.tabNivel1);
             this.tabControl1.Controls.Add(this.tabNivel2);
             this.tabControl1.Controls.Add(this.tabNivel3);
+            this.tabControl1.Controls.Add(this.tabAdmin);
             this.tabControl1.Dock     = System.Windows.Forms.DockStyle.None;
             this.tabControl1.Font     = new System.Drawing.Font("Microsoft Sans Serif", 9F);
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
@@ -355,6 +370,87 @@ namespace MigrarDatosSQL
             this.grpSQL.Controls.Add(this.btnConsultarSQL);
 
             // ═══════════════════════════════════════════════════════════════
+            // TAB ADMINISTRAR – Editar y Eliminar
+            // ═══════════════════════════════════════════════════════════════
+            this.tabAdmin.BackColor = System.Drawing.SystemColors.Control;
+            this.tabAdmin.Controls.Add(this.grpAdmin);
+            this.tabAdmin.Location  = new System.Drawing.Point(4, 24);
+            this.tabAdmin.Name      = "tabAdmin";
+            this.tabAdmin.Padding   = new System.Windows.Forms.Padding(10);
+            this.tabAdmin.Size      = new System.Drawing.Size(752, 342);
+            this.tabAdmin.TabIndex  = 3;
+            this.tabAdmin.Text      = "Administrar";
+
+            this.grpAdmin.Location = new System.Drawing.Point(15, 15);
+            this.grpAdmin.Name     = "grpAdmin";
+            this.grpAdmin.Size     = new System.Drawing.Size(720, 310);
+            this.grpAdmin.TabIndex = 0;
+            this.grpAdmin.TabStop  = false;
+            this.grpAdmin.Text     = "Editar / Eliminar Ciudadano";
+
+            int aCol1 = 20, aCol2 = 120, aFila = 30, aPaso = 40;
+
+            this.lblAdminID.Location = new System.Drawing.Point(aCol1, aFila);
+            this.lblAdminID.Name     = "lblAdminID";
+            this.lblAdminID.Size     = new System.Drawing.Size(90, 23);
+            this.lblAdminID.Text     = "Buscar por ID:";
+            this.txtAdminID.Location = new System.Drawing.Point(aCol2, aFila - 2);
+            this.txtAdminID.Name     = "txtAdminID";
+            this.txtAdminID.Size     = new System.Drawing.Size(120, 23);
+            this.grpAdmin.Controls.Add(this.lblAdminID);
+            this.grpAdmin.Controls.Add(this.txtAdminID);
+            aFila += aPaso;
+
+            this.btnBuscarAdmin.Location = new System.Drawing.Point(aCol1, aFila);
+            this.btnBuscarAdmin.Name     = "btnBuscarAdmin";
+            this.btnBuscarAdmin.Size     = new System.Drawing.Size(130, 32);
+            this.btnBuscarAdmin.Text     = "Buscar";
+            this.btnBuscarAdmin.Click   += new System.EventHandler(this.btnBuscarAdmin_Click);
+            this.grpAdmin.Controls.Add(this.btnBuscarAdmin);
+            aFila += aPaso + 10;
+
+            this.lblAdminNombre.Location = new System.Drawing.Point(aCol1, aFila);
+            this.lblAdminNombre.Name     = "lblAdminNombre";
+            this.lblAdminNombre.Size     = new System.Drawing.Size(90, 23);
+            this.lblAdminNombre.Text     = "Nombre:";
+            this.txtAdminNombre.Location = new System.Drawing.Point(aCol2, aFila - 2);
+            this.txtAdminNombre.Name     = "txtAdminNombre";
+            this.txtAdminNombre.Size     = new System.Drawing.Size(280, 23);
+            this.txtAdminNombre.Enabled  = true;
+            this.grpAdmin.Controls.Add(this.lblAdminNombre);
+            this.grpAdmin.Controls.Add(this.txtAdminNombre);
+            aFila += aPaso;
+
+            this.lblAdminEdad.Location = new System.Drawing.Point(aCol1, aFila);
+            this.lblAdminEdad.Name     = "lblAdminEdad";
+            this.lblAdminEdad.Size     = new System.Drawing.Size(90, 23);
+            this.lblAdminEdad.Text     = "Edad:";
+            this.txtAdminEdad.Location = new System.Drawing.Point(aCol2, aFila - 2);
+            this.txtAdminEdad.Name     = "txtAdminEdad";
+            this.txtAdminEdad.Size     = new System.Drawing.Size(80, 23);
+            this.txtAdminEdad.Enabled  = true;
+            this.grpAdmin.Controls.Add(this.lblAdminEdad);
+            this.grpAdmin.Controls.Add(this.txtAdminEdad);
+            aFila += aPaso + 10;
+
+            this.btnEditarAdmin.Location = new System.Drawing.Point(aCol1, aFila);
+            this.btnEditarAdmin.Name     = "btnEditarAdmin";
+            this.btnEditarAdmin.Size     = new System.Drawing.Size(130, 32);
+            this.btnEditarAdmin.Text     = "Guardar Cambios";
+            this.btnEditarAdmin.Enabled  = false;
+            this.btnEditarAdmin.Click   += new System.EventHandler(this.btnEditarAdmin_Click);
+            this.grpAdmin.Controls.Add(this.btnEditarAdmin);
+
+            this.btnEliminarAdmin.Location = new System.Drawing.Point(aCol1 + 145, aFila);
+            this.btnEliminarAdmin.Name     = "btnEliminarAdmin";
+            this.btnEliminarAdmin.Size     = new System.Drawing.Size(130, 32);
+            this.btnEliminarAdmin.Text     = "Eliminar Registro";
+            this.btnEliminarAdmin.Enabled  = false;
+            this.btnEliminarAdmin.BackColor = System.Drawing.Color.MistyRose;
+            this.btnEliminarAdmin.Click   += new System.EventHandler(this.btnEliminarAdmin_Click);
+            this.grpAdmin.Controls.Add(this.btnEliminarAdmin);
+
+            // ═══════════════════════════════════════════════════════════════
             // PANEL LOG – visible siempre, debajo del tabControl
             // ═══════════════════════════════════════════════════════════════
             this.pnlLog.Location  = new System.Drawing.Point(0, 372);
@@ -405,6 +501,7 @@ namespace MigrarDatosSQL
             this.tabNivel1.ResumeLayout(false);
             this.tabNivel2.ResumeLayout(false);
             this.tabNivel3.ResumeLayout(false);
+            this.tabAdmin.ResumeLayout(false);
             this.ResumeLayout(false);
         }
 
@@ -412,17 +509,20 @@ namespace MigrarDatosSQL
 
         // ── Controles ────────────────────────────────────────────────────────
         private System.Windows.Forms.TabControl  tabControl1;
-        private System.Windows.Forms.TabPage     tabNivel1, tabNivel2, tabNivel3;
-        private System.Windows.Forms.GroupBox    grpDatos, grpIndice, grpSQL;
+        private System.Windows.Forms.TabPage     tabNivel1, tabNivel2, tabNivel3, tabAdmin;
+        private System.Windows.Forms.GroupBox    grpDatos, grpIndice, grpSQL, grpAdmin;
         private System.Windows.Forms.Label       lblID, lblNombre, lblEdad, lblPosicion;
         private System.Windows.Forms.Label       lblInfoFormula, lblInfoIndice, lblInfoSQL;
         private System.Windows.Forms.Label       lblBuscarID, lblServer, lblDatabase, lblUsuario, lblPassword;
+        private System.Windows.Forms.Label       lblAdminID, lblAdminNombre, lblAdminEdad;
         private System.Windows.Forms.TextBox     txtID, txtNombre, txtEdad, txtPosicion;
         private System.Windows.Forms.TextBox     txtBuscarID, txtServer, txtDatabase, txtUsuario, txtPassword;
+        private System.Windows.Forms.TextBox     txtAdminID, txtAdminNombre, txtAdminEdad;
         private System.Windows.Forms.Button      btnGuardar, btnLeerPosicion, btnLimpiarCampos;
         private System.Windows.Forms.Button      btnBuscarIndexado, btnVerIndice;
         private System.Windows.Forms.Button      btnConfigurarConexion, btnCrearTabla;
         private System.Windows.Forms.Button      btnMigrar, btnConsultarSQL;
+        private System.Windows.Forms.Button      btnBuscarAdmin, btnEditarAdmin, btnEliminarAdmin;
         private System.Windows.Forms.Panel       pnlLog;
         private System.Windows.Forms.Label       lblLogTitulo;
         private System.Windows.Forms.RichTextBox txtLog;
