@@ -238,11 +238,27 @@ IF NOT EXISTS (SELECT 1 FROM Ciudadanos WHERE Id = @Id)
                 return;
             }
 
+            if (!int.TryParse(txtPosicion.Text.Trim(), out int posicion) || posicion < 0)
+            {
+                MessageBox.Show("Ingrese una posición válida (entero ≥ 0).",
+                    "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            long offsetDeseado = _gestor.ObtenerOffset(posicion);
+            if (_indice.ContainsValue(offsetDeseado))
+            {
+                int idOcupante = -1;
+                foreach (var kv in _indice)
+                    if (kv.Value == offsetDeseado) { idOcupante = kv.Key; break; }
+
+                MessageBox.Show($"La posición {posicion} ya está ocupada por el ciudadano con ID {idOcupante}.",
+                    "Posición ocupada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
-                // Posición automática: siguiente slot disponible al final del archivo
-                int posicion = _gestor.SiguientePosicionLibre();
-
                 var ciudadano = new Ciudadano(id, nombre, edad);
                 _gestor.GuardarCiudadano(ciudadano, posicion);
 
@@ -261,31 +277,26 @@ IF NOT EXISTS (SELECT 1 FROM Ciudadanos WHERE Id = @Id)
             }
         }
 
-        private void btnLeerID_Click(object sender, EventArgs e)
+        private void btnLeerPosicion_Click(object sender, EventArgs e)
         {
-            if (!int.TryParse(txtID.Text.Trim(), out int id) || id <= 0)
+            if (!int.TryParse(txtPosicion.Text.Trim(), out int posicion) || posicion < 0)
             {
-                MessageBox.Show("Ingrese un ID válido en el campo ID Ciudadano.",
+                MessageBox.Show("Ingrese una posición válida (entero ≥ 0).",
                     "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!_indice.TryGetValue(id, out long offset))
-            {
-                AppendLog($"[NIVEL 1] No existe ningún ciudadano con ID {id}.");
                 return;
             }
 
             try
             {
-                int posicion = (int)(offset / Ciudadano.Size);
                 Ciudadano? c = _gestor.LeerCiudadano(posicion);
                 if (c is null)
                 {
-                    AppendLog($"[NIVEL 1] No se pudo leer el registro del ID {id}.");
+                    AppendLog($"[NIVEL 1] Posición {posicion} fuera del rango del archivo.");
                     return;
                 }
-                AppendLog($"[NIVEL 1] Lectura por ID={id} (posición {posicion}, offset {offset} bytes):");
+
+                long offset = _gestor.ObtenerOffset(posicion);
+                AppendLog($"[NIVEL 1] Lectura posición {posicion} (offset {offset} bytes):");
                 AppendLog($"  Id={c.Value.Id}, Nombre={c.Value.Nombre}, Edad={c.Value.Edad}");
             }
             catch (Exception ex)
@@ -538,7 +549,7 @@ CREATE TABLE Ciudadanos (
 
         private void btnLimpiarLog_Click(object sender, EventArgs e)    => txtLog.Clear();
         private void btnLimpiarCampos_Click(object sender, EventArgs e) =>
-            (txtID.Text, txtNombre.Text, txtEdad.Text) = ("", "", "");
+            (txtID.Text, txtNombre.Text, txtEdad.Text, txtPosicion.Text) = ("", "", "", "");
 
         // ═════════════════════════════════════════════════════════════════════
         //  ADMINISTRAR – Editar y Eliminar registros del archivo binario

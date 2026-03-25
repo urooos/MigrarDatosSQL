@@ -30,8 +30,10 @@ namespace MigrarDatosSQL
             this.txtNombre             = new System.Windows.Forms.TextBox();
             this.lblEdad               = new System.Windows.Forms.Label();
             this.txtEdad               = new System.Windows.Forms.TextBox();
+            this.lblPosicion           = new System.Windows.Forms.Label();
+            this.txtPosicion           = new System.Windows.Forms.TextBox();
             this.btnGuardar            = new System.Windows.Forms.Button();
-            this.btnLeerID             = new System.Windows.Forms.Button();
+            this.btnLeerPosicion       = new System.Windows.Forms.Button();
             this.btnLimpiarCampos      = new System.Windows.Forms.Button();
             this.lblInfoFormula        = new System.Windows.Forms.Label();
 
@@ -168,6 +170,18 @@ namespace MigrarDatosSQL
             this.txtEdad.Size     = new System.Drawing.Size(80, 23);
             this.grpDatos.Controls.Add(this.lblEdad);
             this.grpDatos.Controls.Add(this.txtEdad);
+            fila += paso;
+
+            // Posicion
+            this.lblPosicion.Location = new System.Drawing.Point(col1, fila);
+            this.lblPosicion.Name     = "lblPosicion";
+            this.lblPosicion.Size     = new System.Drawing.Size(95, 23);
+            this.lblPosicion.Text     = "Posicion (>= 0):";
+            this.txtPosicion.Location = new System.Drawing.Point(col2, fila - 2);
+            this.txtPosicion.Name     = "txtPosicion";
+            this.txtPosicion.Size     = new System.Drawing.Size(80, 23);
+            this.grpDatos.Controls.Add(this.lblPosicion);
+            this.grpDatos.Controls.Add(this.txtPosicion);
             fila += paso + 10;
 
             // Botones Nivel 1
@@ -178,12 +192,12 @@ namespace MigrarDatosSQL
             this.btnGuardar.Click   += new System.EventHandler(this.btnGuardar_Click);
             this.grpDatos.Controls.Add(this.btnGuardar);
 
-            this.btnLeerID.Location = new System.Drawing.Point(col1 + 145, fila);
-            this.btnLeerID.Name     = "btnLeerID";
-            this.btnLeerID.Size     = new System.Drawing.Size(130, 32);
-            this.btnLeerID.Text     = "Leer por ID";
-            this.btnLeerID.Click   += new System.EventHandler(this.btnLeerID_Click);
-            this.grpDatos.Controls.Add(this.btnLeerID);
+            this.btnLeerPosicion.Location = new System.Drawing.Point(col1 + 145, fila);
+            this.btnLeerPosicion.Name     = "btnLeerPosicion";
+            this.btnLeerPosicion.Size     = new System.Drawing.Size(130, 32);
+            this.btnLeerPosicion.Text     = "Leer Posicion";
+            this.btnLeerPosicion.Click   += new System.EventHandler(this.btnLeerPosicion_Click);
+            this.grpDatos.Controls.Add(this.btnLeerPosicion);
 
             this.btnLimpiarCampos.Location = new System.Drawing.Point(col1 + 290, fila);
             this.btnLimpiarCampos.Name     = "btnLimpiarCampos";
@@ -497,14 +511,14 @@ namespace MigrarDatosSQL
         private System.Windows.Forms.TabControl  tabControl1;
         private System.Windows.Forms.TabPage     tabNivel1, tabNivel2, tabNivel3, tabAdmin;
         private System.Windows.Forms.GroupBox    grpDatos, grpIndice, grpSQL, grpAdmin;
-        private System.Windows.Forms.Label       lblID, lblNombre, lblEdad;
+        private System.Windows.Forms.Label       lblID, lblNombre, lblEdad, lblPosicion;
         private System.Windows.Forms.Label       lblInfoFormula, lblInfoIndice, lblInfoSQL;
         private System.Windows.Forms.Label       lblBuscarID, lblServer, lblDatabase, lblUsuario, lblPassword;
         private System.Windows.Forms.Label       lblAdminID, lblAdminNombre, lblAdminEdad;
-        private System.Windows.Forms.TextBox     txtID, txtNombre, txtEdad;
+        private System.Windows.Forms.TextBox     txtID, txtNombre, txtEdad, txtPosicion;
         private System.Windows.Forms.TextBox     txtBuscarID, txtServer, txtDatabase, txtUsuario, txtPassword;
         private System.Windows.Forms.TextBox     txtAdminID, txtAdminNombre, txtAdminEdad;
-        private System.Windows.Forms.Button      btnGuardar, btnLeerID, btnLimpiarCampos;
+        private System.Windows.Forms.Button      btnGuardar, btnLeerPosicion, btnLimpiarCampos;
         private System.Windows.Forms.Button      btnBuscarIndexado, btnVerIndice;
         private System.Windows.Forms.Button      btnConfigurarConexion, btnCrearTabla;
         private System.Windows.Forms.Button      btnMigrar, btnConsultarSQL;
