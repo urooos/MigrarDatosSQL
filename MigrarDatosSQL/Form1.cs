@@ -24,13 +24,17 @@ namespace MigrarDatosSQL
         public string Nombre;
 
         public int Edad;
-        //AJSAJAJSJASJASJ v2
+
+        // Padding de 2 bytes para alcanzar exactamente 60 bytes por registro
+        // Id(4) + Nombre(50) + Edad(4) + _pad(2) = 60 bytes
+        private short _pad;
 
         public Ciudadano(int id, string nombre, int edad)
         {
             Id     = id;
             Nombre = nombre;
             Edad   = edad;
+            _pad   = 0;
         }
 
         public static int Size => Marshal.SizeOf<Ciudadano>();
@@ -56,6 +60,7 @@ namespace MigrarDatosSQL
             // Nombre con relleno fijo a exactamente 50 chars ANSI (1 byte/char)
             writer.Write(c.Nombre.PadRight(50).Substring(0, 50).ToCharArray());
             writer.Write(c.Edad);
+            writer.Write((short)0); // padding: 2 bytes → total = 60 bytes
         }
 
         public Ciudadano? LeerCiudadano(int posicion)
@@ -72,6 +77,7 @@ namespace MigrarDatosSQL
             int    id     = reader.ReadInt32();
             string nombre = new string(reader.ReadChars(50)).TrimEnd();
             int    edad   = reader.ReadInt32();
+            reader.ReadInt16(); // padding: 2 bytes descartados
             return new Ciudadano(id, nombre, edad);
         }
 
@@ -89,6 +95,7 @@ namespace MigrarDatosSQL
                 int    id     = reader.ReadInt32();
                 string nombre = new string(reader.ReadChars(50)).TrimEnd();
                 int    edad   = reader.ReadInt32();
+                reader.ReadInt16(); // padding: 2 bytes descartados
                 lista.Add(new Ciudadano(id, nombre, edad));
             }
             return lista;
@@ -97,6 +104,25 @@ namespace MigrarDatosSQL
         public long ObtenerOffset(int posicion) => (long)posicion * Ciudadano.Size;
 
         public bool ArchivoExiste() => File.Exists(_path);
+
+        // Devuelve el índice del primer slot vacío (Id==0) o el siguiente al final
+        public int SiguientePosicionLibre()
+        {
+            if (!File.Exists(_path)) return 0;
+
+            using var fs     = new FileStream(_path, FileMode.Open, FileAccess.Read);
+            using var reader = new BinaryReader(fs, Encoding.Latin1, leaveOpen: true);
+
+            long total = fs.Length / Ciudadano.Size;
+            for (int i = 0; i < total; i++)
+            {
+                fs.Seek((long)i * Ciudadano.Size, SeekOrigin.Begin);
+                int id = reader.ReadInt32();
+                if (id == 0) return i; // slot vacío (eliminado)
+                reader.ReadBytes(Ciudadano.Size - 4); // saltar resto del registro
+            }
+            return (int)total; // al final del archivo
+        }
 
         public bool EditarCiudadano(Ciudadano c, long offset)
         {
@@ -109,6 +135,7 @@ namespace MigrarDatosSQL
             writer.Write(c.Id);
             writer.Write(c.Nombre.PadRight(50).Substring(0, 50).ToCharArray());
             writer.Write(c.Edad);
+            writer.Write((short)0); // padding: 2 bytes → total = 60 bytes
             return true;
         }
 
@@ -121,7 +148,7 @@ namespace MigrarDatosSQL
             using var writer = new BinaryWriter(fs, Encoding.Latin1, leaveOpen: true);
 
             fs.Seek(offset, SeekOrigin.Begin);
-            writer.Write(new byte[Ciudadano.Size]); // 58 bytes en cero
+            writer.Write(new byte[Ciudadano.Size]); // 60 bytes en cero
             return true;
         }
     }
@@ -211,27 +238,11 @@ IF NOT EXISTS (SELECT 1 FROM Ciudadanos WHERE Id = @Id)
                 return;
             }
 
-            if (!int.TryParse(txtPosicion.Text.Trim(), out int posicion) || posicion < 0)
-            {
-                MessageBox.Show("Ingrese una posición válida (entero ≥ 0).",
-                    "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            long offsetDeseado = _gestor.ObtenerOffset(posicion);
-            if (_indice.ContainsValue(offsetDeseado))
-            {
-                int idOcupante = -1;
-                foreach (var kv in _indice)
-                    if (kv.Value == offsetDeseado) { idOcupante = kv.Key; break; }
-
-                MessageBox.Show($"La posición {posicion} ya está ocupada por el ciudadano con ID {idOcupante}.",
-                    "Posición ocupada", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             try
             {
+                // Posición automática: siguiente slot disponible al final del archivo
+                int posicion = _gestor.SiguientePosicionLibre();
+
                 var ciudadano = new Ciudadano(id, nombre, edad);
                 _gestor.GuardarCiudadano(ciudadano, posicion);
 
@@ -250,26 +261,31 @@ IF NOT EXISTS (SELECT 1 FROM Ciudadanos WHERE Id = @Id)
             }
         }
 
-        private void btnLeerPosicion_Click(object sender, EventArgs e)
+        private void btnLeerID_Click(object sender, EventArgs e)
         {
-            if (!int.TryParse(txtPosicion.Text.Trim(), out int posicion) || posicion < 0)
+            if (!int.TryParse(txtID.Text.Trim(), out int id) || id <= 0)
             {
-                MessageBox.Show("Ingrese una posición válida (entero ≥ 0).",
+                MessageBox.Show("Ingrese un ID válido en el campo ID Ciudadano.",
                     "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (!_indice.TryGetValue(id, out long offset))
+            {
+                AppendLog($"[NIVEL 1] No existe ningún ciudadano con ID {id}.");
                 return;
             }
 
             try
             {
+                int posicion = (int)(offset / Ciudadano.Size);
                 Ciudadano? c = _gestor.LeerCiudadano(posicion);
                 if (c is null)
                 {
-                    AppendLog($"[NIVEL 1] Posición {posicion} fuera del rango del archivo.");
+                    AppendLog($"[NIVEL 1] No se pudo leer el registro del ID {id}.");
                     return;
                 }
-
-                long offset = _gestor.ObtenerOffset(posicion);
-                AppendLog($"[NIVEL 1] Lectura posición {posicion} (offset {offset} bytes):");
+                AppendLog($"[NIVEL 1] Lectura por ID={id} (posición {posicion}, offset {offset} bytes):");
                 AppendLog($"  Id={c.Value.Id}, Nombre={c.Value.Nombre}, Edad={c.Value.Edad}");
             }
             catch (Exception ex)
@@ -522,7 +538,7 @@ CREATE TABLE Ciudadanos (
 
         private void btnLimpiarLog_Click(object sender, EventArgs e)    => txtLog.Clear();
         private void btnLimpiarCampos_Click(object sender, EventArgs e) =>
-            (txtID.Text, txtNombre.Text, txtEdad.Text, txtPosicion.Text) = ("", "", "", "");
+            (txtID.Text, txtNombre.Text, txtEdad.Text) = ("", "", "");
 
         // ═════════════════════════════════════════════════════════════════════
         //  ADMINISTRAR – Editar y Eliminar registros del archivo binario
